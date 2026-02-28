@@ -3,60 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الريموت الاحترافي ⚙️</title>
+    <title>الريموت الشامل ⚙️</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; padding: 15px; }
-        .card { background: #222; padding: 20px; border-radius: 20px; border: 1px solid #ff9f43; max-width: 450px; margin: auto; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; background: #333; color: white; border: 1px solid #444; }
-        button { width: 100%; padding: 12px; background: #ff9f43; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        .comm-admin { background: #333; margin-top: 10px; padding: 10px; border-radius: 10px; text-align: right; font-size: 13px; }
-        .reply-btn { background: #3498db; color: white; padding: 5px; font-size: 11px; width: auto; margin-top: 5px; }
+        body { background: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
+        .admin-card { background: #222; border: 2px solid #ff9f43; border-radius: 20px; padding: 20px; max-width: 500px; margin: auto; }
+        input, select { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #444; background: #333; color: white; }
+        button { width: 95%; padding: 12px; margin: 5px 0; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .btn-send { background: #ff9f43; color: black; }
+        .btn-delete { background: #e74c3c; color: white; }
+        .comm-item { background: #333; padding: 15px; margin: 15px 0; border-radius: 12px; text-align: right; border-right: 5px solid #ff9f43; }
+        .reply-box { display: flex; gap: 5px; margin-top: 10px; }
+        .reply-input { flex: 1; margin: 0; padding: 8px; }
+        .reply-btn { width: auto; background: #3498db; padding: 8px 15px; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>لوحة التحكم ⚙️</h2>
-        <input type="text" id="inp" placeholder="نشر جديد...">
-        <button onclick="send()">نشر الآن 🚀</button>
+
+    <div class="admin-card">
+        <h2>لوحة التحكم (Mishmish Remote) ⚙️</h2>
         
-        <hr style="border-color:#444; margin:20px 0;">
-        
+        <p style="color: #888;">أرسل رسالة نصية، رابط صورة، أو رابط يوتيوب</p>
+        <input type="text" id="mainInput" placeholder="أدخل المحتوى هنا...">
+        <button class="btn-send" onclick="sendToMishmish()">تحديث صفحة مشمش الآن 🚀</button>
+        <button class="btn-delete" onclick="resetPage()">مسح الصفحة (تصفير) 🧹</button>
+
+        <hr style="border-color:#444; margin:25px 0;">
+
         <h3>التعليقات والردود 💬</h3>
-        <div id="adminCommList"></div>
-        <button style="background:#e74c3c; color:white; margin-top:20px;" onclick="db.ref('comments').set(null)">مسح الكل 🧹</button>
+        <div id="adminComments">جاري تحميل التعليقات...</div>
     </div>
 
     <script>
-        const conf = { databaseURL: "https://ourphotoshare-a874a-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(conf);
+        // إعدادات Firebase الخاصة بك
+        const firebaseConfig = { databaseURL: "https://ourphotoshare-a874a-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function send() {
-            const v = document.getElementById('inp').value;
-            if(v) db.ref('post').set({content: v, timestamp: Date.now()}).then(() => alert("تم!"));
+        // وظيفة إرسال البيانات لمسار note ليقرأها الموقع
+        function sendToMishmish() {
+            const val = document.getElementById('mainInput').value;
+            if(!val) return alert("الرجاء كتابة شيء أولاً!");
+            
+            // إرسال كنص مباشر لتجنب مشكلة [object Object]
+            db.ref('note').set(val).then(() => {
+                alert("تم التحديث! سيراها مشمش فوراً ✅");
+                document.getElementById('mainInput').value = "";
+            });
         }
 
-        // جلب التعليقات للرد عليها
-        db.ref('comments').on('value', (s) => {
-            const list = document.getElementById('adminCommList');
-            list.innerHTML = "";
-            s.forEach((child) => {
+        // مسح المحتوى الحالي
+        function resetPage() {
+            if(confirm("هل تريد مسح الرسالة الحالية؟")) {
+                db.ref('note').set("").then(() => alert("تم المسح"));
+            }
+        }
+
+        // جلب التعليقات من مسار comments وعرضها للرد
+        db.ref('comments').on('value', (snapshot) => {
+            const container = document.getElementById('adminComments');
+            container.innerHTML = "";
+            
+            if (!snapshot.exists()) {
+                container.innerHTML = "<p style='color:#666;'>لا توجد تعليقات بعد</p>";
+                return;
+            }
+
+            snapshot.forEach((child) => {
                 const id = child.key;
-                const c = child.val();
-                list.innerHTML += `
-                    <div class="comm-admin">
-                        <b>مشمش:</b> ${c.text} <br>
-                        <input type="text" id="rep-${id}" placeholder="اكتب ردك هنا..." style="width:70%; font-size:12px;">
-                        <button class="reply-btn" onclick="reply('${id}')">رد</button>
+                const data = child.val();
+                const text = typeof data === 'object' ? data.text : data;
+                const currentReply = data.reply || "";
+
+                container.innerHTML += `
+                    <div class="comm-item">
+                        <strong>تعليق:</strong> <span>${text}</span>
+                        ${currentReply ? `<p style="color:#ff9f43; margin:5px 0;">↗️ ردك الحالي: ${currentReply}</p>` : ''}
+                        <div class="reply-box">
+                            <input type="text" id="rep-${id}" class="reply-input" placeholder="اكتب ردك هنا...">
+                            <button onclick="sendReply('${id}')" class="reply-btn">رد</button>
+                            <button onclick="deleteComment('${id}')" style="background:#e74c3c; width:auto; padding:8px;">حذف</button>
+                        </div>
                     </div>`;
             });
         });
 
-        function reply(id) {
-            const r = document.getElementById('rep-'+id).value;
-            if(r) db.ref('comments/'+id+'/reply').set(r).then(() => alert("تم الرد!"));
+        // إرسال الرد وتحديثه في Firebase
+        function sendReply(id) {
+            const replyText = document.getElementById('rep-'+id).value;
+            if(!replyText) return alert("اكتب الرد أولاً");
+            
+            db.ref('comments/'+id).update({ 
+                reply: replyText 
+            }).then(() => {
+                alert("تم إرسال الرد بنجاح!");
+            });
+        }
+
+        // حذف تعليق معين
+        function deleteComment(id) {
+            if(confirm("حذف هذا التعليق؟")) {
+                db.ref('comments/'+id).remove();
+            }
         }
     </script>
 </body>
