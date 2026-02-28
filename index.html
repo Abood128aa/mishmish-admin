@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الريموت السري 🔐</title>
+    <title>الريموت الذكي 🔐</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; padding: 20px; }
-        .card { background: #222; padding: 25px; border-radius: 20px; border: 2px solid #ff9f43; max-width: 450px; margin: auto; }
+        .card { background: #222; padding: 20px; border-radius: 20px; border: 2px solid #ff9f43; max-width: 450px; margin: auto; }
         #adminArea { display: none; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; background: #333; color: white; border: 1px solid #444; }
-        button { width: 95%; padding: 15px; background: #ff9f43; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        .red { background: #e74c3c; color: white; }
+        input { width: 85%; padding: 12px; margin: 10px 0; border-radius: 8px; background: #333; color: white; border: 1px solid #444; }
+        button { width: 100%; padding: 12px; background: #ff9f43; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin: 5px 0; }
+        .keep-row { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; color: #aaa; margin-bottom: 10px; }
+        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
         .blue { background: #3498db; color: white; }
-        .gray { background: #555; color: white; }
+        .red { background: #e74c3c; color: white; }
     </style>
 </head>
 <body>
@@ -27,21 +28,22 @@
         </div>
 
         <div id="adminArea">
-            <h2 style="color:#ff9f43;">لوحة التحكم ⚙️</h2>
+            <h2 style="color:#ff9f43;">لوحة التحكم المؤقتة ⏳</h2>
             
             <input type="text" id="n" placeholder="نص جديد...">
-            <button onclick="save('note', 'n')">تحديث النص</button>
+            <div class="keep-row">
+                <input type="checkbox" id="keepNote"> حفظ دائم (بدون حذف تلقائي)
+            </div>
+            <button onclick="save('note', 'n', 'keepNote')">تحديث النص</button>
             
             <hr style="margin:20px 0; border-color:#444;">
             
-            <input type="text" id="i" placeholder="رابط صورة...">
-            <button class="blue" onclick="save('main_image', 'i')">تحديث الصورة</button>
-            
-            <hr style="margin:20px 0; border-color:#444;">
-            
-            <input type="text" id="v" placeholder="رابط يوتيوب عادي...">
-            <button class="red" onclick="save('video_url', 'v')">تشغيل فيديو 🎥</button>
-            <button class="gray" onclick="clearVideo()">إخفاء الفيديو 🖼️</button>
+            <input type="text" id="v" placeholder="رابط يوتيوب...">
+            <div class="keep-row">
+                <input type="checkbox" id="keepVideo"> حفظ دائم (بدون حذف تلقائي)
+            </div>
+            <button class="red" onclick="save('video_url', 'v', 'keepVideo')">تشغيل فيديو 🎥</button>
+            <button style="background:#555; color:white;" onclick="db.ref('video_url').set('')">إخفاء الفيديو الآن</button>
         </div>
     </div>
 
@@ -51,19 +53,27 @@
         const db = firebase.database();
 
         function login() {
-            if(document.getElementById('pw').value === "1234") { // غير الرمز هنا
+            if(document.getElementById('pw').value === "1234") {
                 document.getElementById('lock').style.display = 'none';
                 document.getElementById('adminArea').style.display = 'block';
             } else { alert("خطأ!"); }
         }
 
-        function save(p, id) {
-            const v = document.getElementById(id).value;
-            if(v) db.ref(p).set(v).then(() => { alert("تم! ✅"); document.getElementById(id).value=""; });
-        }
-
-        function clearVideo() {
-            db.ref('video_url').set("").then(() => alert("تم العودة للصورة! ✅"));
+        function save(path, inputId, checkId) {
+            const val = document.getElementById(inputId).value;
+            const keep = document.getElementById(checkId).checked;
+            
+            if(val) {
+                // نرسل القيمة مع "وقت الإنشاء" وعلامة "الحفظ الدائم"
+                db.ref(path).set({
+                    content: val,
+                    timestamp: Date.now(),
+                    permanent: keep
+                }).then(() => {
+                    alert(keep ? "تم التحديث (دائم) ✅" : "تم التحديث (سيحذف بعد ساعة) ⏳");
+                    document.getElementById(inputId).value = "";
+                });
+            }
         }
     </script>
 </body>
