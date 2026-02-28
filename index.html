@@ -3,56 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم المحمية 🔐</title>
+    <title>الريموت السري 🔐</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; padding: 30px; }
+        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; padding: 20px; }
         .card { background: #222; padding: 25px; border-radius: 20px; border: 2px solid #ff9f43; max-width: 450px; margin: auto; }
-        #adminContent { display: none; } /* مخفي حتى كتابة الرمز */
+        #adminArea { display: none; }
         input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; background: #333; color: white; border: 1px solid #444; }
-        button { width: 95%; padding: 15px; background: #ff9f43; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        button { width: 95%; padding: 15px; background: #ff9f43; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .red { background: #e74c3c; color: white; }
+        .blue { background: #3498db; color: white; }
+        .gray { background: #555; color: white; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <div id="loginSection">
+        <div id="lock">
             <h2>دخول المشرف 🔐</h2>
-            <input type="password" id="passInput" placeholder="أدخل رمز الدخول...">
-            <button onclick="checkPass()">دخول</button>
+            <input type="password" id="pw" placeholder="الرمز السري...">
+            <button onclick="login()">دخول</button>
         </div>
 
-        <div id="adminContent">
-            <h2 style="color:#ff9f43;">ريموت مشمش ⚙️</h2>
-            <input type="text" id="t" placeholder="تغيير الرسالة...">
-            <button onclick="up('note', 't')">تحديث النص</button>
+        <div id="adminArea">
+            <h2 style="color:#ff9f43;">لوحة التحكم ⚙️</h2>
+            
+            <input type="text" id="n" placeholder="نص جديد...">
+            <button onclick="save('note', 'n')">تحديث النص</button>
+            
             <hr style="margin:20px 0; border-color:#444;">
-            <input type="text" id="i" placeholder="رابط صورة جديد...">
-            <button onclick="up('main_image', 'i')" style="background:#3498db; color:white;">تغيير الصورة</button>
+            
+            <input type="text" id="i" placeholder="رابط صورة...">
+            <button class="blue" onclick="save('main_image', 'i')">تحديث الصورة</button>
+            
+            <hr style="margin:20px 0; border-color:#444;">
+            
+            <input type="text" id="v" placeholder="رابط يوتيوب عادي...">
+            <button class="red" onclick="save('video_url', 'v')">تشغيل فيديو 🎥</button>
+            <button class="gray" onclick="clearVideo()">إخفاء الفيديو 🖼️</button>
         </div>
     </div>
 
     <script>
         const conf = { databaseURL: "https://ourphotoshare-a874a-default-rtdb.firebaseio.com" };
         firebase.initializeApp(conf);
+        const db = firebase.database();
 
-        // --- اختر كلمة السر هنا (مثلاً: 1234) ---
-        const myPass = "1234"; 
-
-        function checkPass() {
-            const input = document.getElementById('passInput').value;
-            if(input === myPass) {
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('adminContent').style.display = 'block';
-            } else {
-                alert("الرمز خطأ! ❌");
-            }
+        function login() {
+            if(document.getElementById('pw').value === "1234") { // غير الرمز هنا
+                document.getElementById('lock').style.display = 'none';
+                document.getElementById('adminArea').style.display = 'block';
+            } else { alert("خطأ!"); }
         }
 
-        function up(p, id) {
+        function save(p, id) {
             const v = document.getElementById(id).value;
-            if(v) firebase.database().ref(p).set(v).then(() => alert("تم التحديث! ✅"));
+            if(v) db.ref(p).set(v).then(() => { alert("تم! ✅"); document.getElementById(id).value=""; });
+        }
+
+        function clearVideo() {
+            db.ref('video_url').set("").then(() => alert("تم العودة للصورة! ✅"));
         }
     </script>
 </body>
