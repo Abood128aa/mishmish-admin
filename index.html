@@ -3,48 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الريموت الذكي 🔐</title>
+    <title>الريموت الاحترافي ⚙️</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; padding: 20px; }
-        .card { background: #222; padding: 20px; border-radius: 20px; border: 2px solid #ff9f43; max-width: 450px; margin: auto; }
-        #adminArea { display: none; }
-        input { width: 85%; padding: 12px; margin: 10px 0; border-radius: 8px; background: #333; color: white; border: 1px solid #444; }
-        button { width: 100%; padding: 12px; background: #ff9f43; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin: 5px 0; }
-        .keep-row { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; color: #aaa; margin-bottom: 10px; }
-        input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
-        .blue { background: #3498db; color: white; }
-        .red { background: #e74c3c; color: white; }
+        body { background: #1a1a1a; color: white; text-align: center; font-family: sans-serif; padding: 15px; }
+        .card { background: #222; padding: 20px; border-radius: 20px; border: 1px solid #ff9f43; max-width: 450px; margin: auto; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; background: #333; color: white; border: 1px solid #444; }
+        button { width: 100%; padding: 12px; background: #ff9f43; color: black; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 5px; }
+        .comm-admin { background: #333; margin-top: 10px; padding: 10px; border-radius: 10px; text-align: right; font-size: 13px; }
+        .reply-btn { background: #3498db; color: white; padding: 5px; font-size: 11px; width: auto; margin-top: 5px; }
     </style>
 </head>
 <body>
-
     <div class="card">
-        <div id="lock">
-            <h2>دخول المشرف 🔐</h2>
-            <input type="password" id="pw" placeholder="الرمز السري...">
-            <button onclick="login()">دخول</button>
-        </div>
-
-        <div id="adminArea">
-            <h2 style="color:#ff9f43;">لوحة التحكم المؤقتة ⏳</h2>
-            
-            <input type="text" id="n" placeholder="نص جديد...">
-            <div class="keep-row">
-                <input type="checkbox" id="keepNote"> حفظ دائم (بدون حذف تلقائي)
-            </div>
-            <button onclick="save('note', 'n', 'keepNote')">تحديث النص</button>
-            
-            <hr style="margin:20px 0; border-color:#444;">
-            
-            <input type="text" id="v" placeholder="رابط يوتيوب...">
-            <div class="keep-row">
-                <input type="checkbox" id="keepVideo"> حفظ دائم (بدون حذف تلقائي)
-            </div>
-            <button class="red" onclick="save('video_url', 'v', 'keepVideo')">تشغيل فيديو 🎥</button>
-            <button style="background:#555; color:white;" onclick="db.ref('video_url').set('')">إخفاء الفيديو الآن</button>
-        </div>
+        <h2>لوحة التحكم ⚙️</h2>
+        <input type="text" id="inp" placeholder="نشر جديد...">
+        <button onclick="send()">نشر الآن 🚀</button>
+        
+        <hr style="border-color:#444; margin:20px 0;">
+        
+        <h3>التعليقات والردود 💬</h3>
+        <div id="adminCommList"></div>
+        <button style="background:#e74c3c; color:white; margin-top:20px;" onclick="db.ref('comments').set(null)">مسح الكل 🧹</button>
     </div>
 
     <script>
@@ -52,28 +33,30 @@
         firebase.initializeApp(conf);
         const db = firebase.database();
 
-        function login() {
-            if(document.getElementById('pw').value === "1234") {
-                document.getElementById('lock').style.display = 'none';
-                document.getElementById('adminArea').style.display = 'block';
-            } else { alert("خطأ!"); }
+        function send() {
+            const v = document.getElementById('inp').value;
+            if(v) db.ref('post').set({content: v, timestamp: Date.now()}).then(() => alert("تم!"));
         }
 
-        function save(path, inputId, checkId) {
-            const val = document.getElementById(inputId).value;
-            const keep = document.getElementById(checkId).checked;
-            
-            if(val) {
-                // نرسل القيمة مع "وقت الإنشاء" وعلامة "الحفظ الدائم"
-                db.ref(path).set({
-                    content: val,
-                    timestamp: Date.now(),
-                    permanent: keep
-                }).then(() => {
-                    alert(keep ? "تم التحديث (دائم) ✅" : "تم التحديث (سيحذف بعد ساعة) ⏳");
-                    document.getElementById(inputId).value = "";
-                });
-            }
+        // جلب التعليقات للرد عليها
+        db.ref('comments').on('value', (s) => {
+            const list = document.getElementById('adminCommList');
+            list.innerHTML = "";
+            s.forEach((child) => {
+                const id = child.key;
+                const c = child.val();
+                list.innerHTML += `
+                    <div class="comm-admin">
+                        <b>مشمش:</b> ${c.text} <br>
+                        <input type="text" id="rep-${id}" placeholder="اكتب ردك هنا..." style="width:70%; font-size:12px;">
+                        <button class="reply-btn" onclick="reply('${id}')">رد</button>
+                    </div>`;
+            });
+        });
+
+        function reply(id) {
+            const r = document.getElementById('rep-'+id).value;
+            if(r) db.ref('comments/'+id+'/reply').set(r).then(() => alert("تم الرد!"));
         }
     </script>
 </body>
