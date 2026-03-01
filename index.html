@@ -2,85 +2,94 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>الريموت الاحترافي ⚙️</title>
+    <title>لوحة تحكم مشمش الذكية ⚙️</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; padding: 20px; text-align: center; }
-        .admin-card { background: #222; border: 2px solid #ff9f43; border-radius: 20px; padding: 20px; max-width: 500px; margin: auto; }
-        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 10px; border: 1px solid #444; background: #333; color: white; }
-        button { width: 95%; padding: 12px; margin: 5px 0; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .btn-orange { background: #ff9f43; color: black; }
-        .btn-red { background: #e74c3c; color: white; margin-top: 20px; }
-        .comm-box { background: #333; padding: 10px; margin: 10px 0; border-radius: 10px; text-align: right; border-right: 4px solid #ff9f43; }
+        body { background: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        .card { background: #1e1e1e; border: 1px solid #333; border-radius: 20px; padding: 20px; max-width: 500px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h2 { color: #ff9f43; text-align: center; }
+        .btn-reset { background: #ff4757; color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #333; background: #121212; color: white; box-sizing: border-box; }
+        .btn-update { background: #ff9f43; color: black; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        
+        /* تصميم الرسائل في لوحة التحكم */
+        .comm-box { background: #252525; padding: 15px; margin-top: 15px; border-radius: 15px; border-right: 4px solid #ff9f43; }
+        .media-content { margin: 10px 0; }
+        .media-content img { max-width: 100%; border-radius: 10px; border: 1px solid #444; }
+        audio { width: 100%; height: 35px; filter: invert(1); }
+        .reply-area { display: flex; gap: 5px; margin-top: 10px; }
+        .btn-reply { background: #3498db; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="admin-card">
-        <h2 style="color:#ff9f43">لوحة التحكم الكاملة ⚙️</h2>
+    <div class="card">
+        <h2>لوحة التحكم الكاملة ⚙️</h2>
         
-        <button class="btn-red" onclick="resetAll()">🔥 تصفير شامل (مسح كل شيء)</button>
-        <hr style="border-color:#444; margin:20px 0;">
+        <button class="btn-reset" onclick="resetEverything()">🔥 تصفير شامل (مسح كل شيء)</button>
 
         <input type="text" id="imgInp" placeholder="ضع رابط الصورة المباشر هنا...">
-        <button class="btn-orange" onclick="updateData('main_image', 'imgInp')">تحديث الصورة 🖼️</button>
+        <button class="btn-update" onclick="update('main_image', 'imgInp')">تحديث الصورة 🖼️</button>
         
         <input type="text" id="vidInp" placeholder="ضع رابط فيديو يوتيوب هنا...">
-        <button class="btn-orange" onclick="updateData('video_url', 'vidInp')">تحديث الفيديو 🎥</button>
+        <button class="btn-update" onclick="update('video_url', 'vidInp')">تحديث الفيديو 🎥</button>
 
-        <hr style="border-color:#444; margin:20px 0;">
-
-        <h3>الرسائل والرد عليها 💬</h3>
-        <div id="adminChat">جاري التحميل...</div>
+        <h3 style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">💬 الرسائل والرد عليها</h3>
+        <div id="adminChat"></div>
     </div>
 
     <script>
-        const firebaseConfig = { databaseURL: "https://ourphotoshare-a874a-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(firebaseConfig);
+        const conf = { databaseURL: "https://ourphotoshare-a874a-default-rtdb.firebaseio.com" };
+        firebase.initializeApp(conf);
         const db = firebase.database();
 
-        function updateData(path, inputId) {
-            const val = document.getElementById(inputId).value;
-            db.ref(path).set(val).then(() => {
-                alert("تم التحديث بنجاح!");
-                document.getElementById(inputId).value = "";
-            });
-        }
-
-        // وظيفة التصفير الشامل
-        function resetAll() {
-            if(confirm("سيتم حذف كل الصور، الفيديوهات، واللايكات.. هل أنت متأكد؟")) {
-                db.ref('main_image').set("");
-                db.ref('video_url').set("");
-                db.ref('reactions').set({like: 0, dislike: 0});
-                db.ref('comments').remove();
-                alert("تم تصفير الموقع بنجاح! ✨");
+        // تصفير البيانات
+        function resetEverything() {
+            if(confirm("سيتم حذف جميع الرسائل والتفاعلات، هل أنت متأكد؟")) {
+                db.ref('/').update({ comments: null, reactions: {like:0, dislike:0}, main_image: "", video_url: "" })
+                .then(() => alert("تم التصفير بنجاح!"));
             }
         }
 
-        // جلب الرسائل للرد عليها
+        function update(path, id) {
+            const val = document.getElementById(id).value;
+            if(val) db.ref(path).set(val).then(() => { alert("تم التحديث!"); document.getElementById(id).value = ""; });
+        }
+
+        // جلب الرسائل وعرضها حسب نوعها (نص، صورة، صوت)
         db.ref('comments').on('value', s => {
             const container = document.getElementById('adminChat');
             container.innerHTML = "";
             s.forEach(child => {
-                const id = child.key;
                 const c = child.val();
+                const id = child.key;
+                let contentHTML = "";
+
+                // فحص نوع المحتوى لمنع ظهور [object Object]
+                if (c.type === "image") {
+                    contentHTML = `<div class="media-content"><img src="${c.data}"></div>`;
+                } else if (c.type === "audio") {
+                    contentHTML = `<div class="media-content"><audio controls src="${c.data}"></audio></div>`;
+                } else {
+                    contentHTML = `<p>${c.text || c}</p>`;
+                }
+
                 container.innerHTML += `
                     <div class="comm-box">
-                        <p>${c.text || c}</p>
-                        <input type="text" id="rep-${id}" placeholder="اكتب ردك هنا..." style="width:70%">
-                        <button onclick="sendReply('${id}')" style="width:20%; background:#3498db; color:white;">رد</button>
+                        ${contentHTML}
+                        <div class="reply-area">
+                            <input type="text" id="rep-${id}" placeholder="اكتب ردك هنا...">
+                            <button class="btn-reply" onclick="reply('${id}')">رد</button>
+                        </div>
+                        ${c.reply ? `<p style="color:#22c55e; font-size:13px; margin-top:5px;">✅ ردك: ${c.reply}</p>` : ''}
                     </div>`;
             });
         });
 
-        function sendReply(id) {
+        function reply(id) {
             const txt = document.getElementById('rep-'+id).value;
-            if(txt) {
-                db.ref('comments/'+id).update({ reply: txt });
-                alert("تم إرسال الرد!");
-            }
+            if(txt) db.ref('comments/'+id).update({ reply: txt }).then(() => alert("تم إرسال الرد"));
         }
     </script>
 </body>
