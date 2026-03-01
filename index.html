@@ -2,95 +2,183 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>لوحة تحكم مشمش الذكية ⚙️</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mishmish Admin - Elite Control 👑</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        body { background: #121212; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; padding: 20px; }
-        .card { background: #1e1e1e; border: 1px solid #333; border-radius: 20px; padding: 20px; max-width: 500px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h2 { color: #ff9f43; text-align: center; }
-        .btn-reset { background: #ff4757; color: white; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #333; background: #121212; color: white; box-sizing: border-box; }
-        .btn-update { background: #ff9f43; color: black; border: none; width: 100%; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        :root { --mish: #f472b6; --bg: #0f172a; --panel: #1e293b; --admin-blue: #3797f0; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: white; margin: 0; height: 100vh; overflow: hidden; position: fixed; width: 100%; }
+
+        /* الهيدر الأصلي */
+        #header-fixed { position: fixed; top: 0; width: 100%; height: 115px; background: var(--panel); z-index: 1000; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .marquee { height: 38px; background: rgba(0,0,0,0.5); overflow: hidden; position: relative; display: flex; align-items: center; }
+        .marquee-inner { position: absolute; white-space: nowrap; animation: scroll-left-right 35s linear infinite; }
+        @keyframes scroll-left-right { 0% { left: -100%; } 100% { left: 100%; } }
+        .quote-item { margin: 0 35px; font-weight: 900; font-size: 17px; color: var(--mish); display: inline-flex; align-items: center; gap: 8px; }
+
+        .status-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; height: 77px; }
+        .avatar-box { width: 55px; height: 55px; border-radius: 50%; border: 2.5px solid var(--mish); position: relative; cursor: pointer; }
+        .has-story { box-shadow: 0 0 15px 4px var(--mish); border-color: #fff; }
+        .avatar-box img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+        /* الدردشة الاحترافية مع ميزات السيطرة */
+        #chat-flow { position: absolute; top: 115px; bottom: 90px; width: 100%; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+        .bubble { padding: 12px 16px; border-radius: 22px; max-width: 82%; font-size: 15px; position: relative; cursor: pointer; }
+        .mish-style { align-self: flex-start; background: #262f40; border-radius: 20px 20px 20px 5px; }
+        .adm-style { align-self: flex-end; background: var(--admin-blue); color: white; border-radius: 20px 20px 5px 20px; }
+        .bubble img { width: 100%; border-radius: 15px; display: block; margin-bottom: 5px; }
         
-        /* تصميم الرسائل في لوحة التحكم */
-        .comm-box { background: #252525; padding: 15px; margin-top: 15px; border-radius: 15px; border-right: 4px solid #ff9f43; }
-        .media-content { margin: 10px 0; }
-        .media-content img { max-width: 100%; border-radius: 10px; border: 1px solid #444; }
-        audio { width: 100%; height: 35px; filter: invert(1); }
-        .reply-area { display: flex; gap: 5px; margin-top: 10px; }
-        .btn-reply { background: #3498db; color: white; border: none; padding: 0 15px; border-radius: 8px; cursor: pointer; }
+        /* خيارات المدير المخفية تحت كل رسالة */
+        .admin-tools { display: flex; gap: 10px; margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+        .tool-btn-sm { background: rgba(255,255,255,0.1); border: none; color: #ccc; font-size: 11px; padding: 4px 8px; border-radius: 5px; cursor: pointer; }
+        .tool-btn-sm:hover { background: var(--mish); color: white; }
+
+        /* شريط الإرسال الأصلي */
+        #footer-fixed { position: fixed; bottom: 0; width: 100%; height: 90px; background: var(--bg); display: flex; align-items: center; justify-content: center; padding: 0 10px; }
+        .insta-input-container { flex: 1; background: #262f40; border-radius: 35px; display: flex; align-items: center; padding: 5px 10px; border: 1px solid #3e4a5d; gap: 5px; height: 52px; }
+        .insta-input-container input { flex: 1; background: none; border: none; color: white; padding: 10px 5px; outline: none; }
+        .send-txt { color: var(--admin-blue); font-weight: bold; background: none; border: none; padding: 0 10px; cursor: pointer; }
+
+        /* اللوحة السفلية للسيطرة الشاملة */
+        .sheet-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: flex-end; }
+        .bottom-sheet { background: #1c2535; width: 100%; border-radius: 25px 25px 0 0; padding: 20px; transform: translateY(100%); transition: 0.3s; text-align: center; }
+        .bottom-sheet.show { transform: translateY(0); }
+        .sheet-btn { width: 100%; background: none; border: none; color: white; padding: 16px; font-size: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h2>لوحة التحكم الكاملة ⚙️</h2>
-        
-        <button class="btn-reset" onclick="resetEverything()">🔥 تصفير شامل (مسح كل شيء)</button>
-
-        <input type="text" id="imgInp" placeholder="ضع رابط الصورة المباشر هنا...">
-        <button class="btn-update" onclick="update('main_image', 'imgInp')">تحديث الصورة 🖼️</button>
-        
-        <input type="text" id="vidInp" placeholder="ضع رابط فيديو يوتيوب هنا...">
-        <button class="btn-update" onclick="update('video_url', 'vidInp')">تحديث الفيديو 🎥</button>
-
-        <h3 style="border-top: 1px solid #333; padding-top: 20px; margin-top: 20px;">💬 الرسائل والرد عليها</h3>
-        <div id="adminChat"></div>
+<div id="header-fixed">
+    <div class="marquee"><div class="marquee-inner" id="q-box"></div></div>
+    <div class="status-bar">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="avatar-box" id="avatar-main" onclick="openAdminSheet()">
+                <img id="p-img" src="" style="display:none">
+                <span id="p-ltr" style="line-height:55px; font-weight:900; font-size:22px; width:100%; display:block; text-align:center;">م</span>
+            </div>
+            <div>
+                <div style="font-weight:bold;">المدير (التحكم الكامل)</div>
+                <div id="st-text" style="font-size:11px; color:var(--mish);">مستوى الوصول: مدير النظام ⚙️</div>
+            </div>
+        </div>
+        <button onclick="openAdminSheet()" style="background:none; border:none; color:white; font-size:22px;"><i class="fas fa-cog"></i></button>
     </div>
+</div>
 
-    <script>
-        const conf = { databaseURL: "https://ourphotoshare-a874a-default-rtdb.firebaseio.com" };
-        firebase.initializeApp(conf);
-        const db = firebase.database();
+<div id="chat-flow"></div>
 
-        // تصفير البيانات
-        function resetEverything() {
-            if(confirm("سيتم حذف جميع الرسائل والتفاعلات، هل أنت متأكد؟")) {
-                db.ref('/').update({ comments: null, reactions: {like:0, dislike:0}, main_image: "", video_url: "" })
-                .then(() => alert("تم التصفير بنجاح!"));
-            }
-        }
+<div id="footer-fixed">
+    <div class="insta-input-container">
+        <button class="footer-icon" style="background:none; border:none; color:white; font-size:20px;" onclick="document.getElementById('chat-up').click()"><i class="fas fa-camera"></i></button>
+        <input type="file" id="chat-up" style="display:none" onchange="uploadFile(this, 'chat')">
+        <input type="text" id="msg-input" placeholder="تحدث كمدير...">
+        <button class="send-txt" onclick="sendMsg()">إرسال</button>
+    </div>
+</div>
 
-        function update(path, id) {
-            const val = document.getElementById(id).value;
-            if(val) db.ref(path).set(val).then(() => { alert("تم التحديث!"); document.getElementById(id).value = ""; });
-        }
+<div class="sheet-overlay" id="p-overlay" onclick="closeSheets()">
+    <div class="bottom-sheet" id="p-sheet" onclick="event.stopPropagation()">
+        <div style="width:40px; height:5px; background:#4a5568; border-radius:10px; margin:0 auto 20px;"></div>
+        
+        <button class="sheet-btn" onclick="resetEverything()" style="color:#ff4757"><i class="fas fa-sync-alt"></i> تصفير الدردشة بالكامل</button>
+        <button class="sheet-btn" onclick="document.getElementById('p-upload').click()"><i class="fas fa-user-circle"></i> تغيير بروفايل مشمش</button>
+        <input type="file" id="p-upload" style="display:none" onchange="uploadFile(this, 'profile')">
+        
+        <button class="sheet-btn" onclick="document.getElementById('story-upload').click()"><i class="fas fa-plus-circle"></i> إضافة حالة جديدة لـ مشمش</button>
+        <input type="file" id="story-upload" style="display:none" onchange="uploadFile(this, 'story')">
+        
+        <button class="sheet-btn" onclick="changeQuotes()"><i class="fas fa-edit"></i> تعديل الجمل المتحركة</button>
+    </div>
+</div>
 
-        // جلب الرسائل وعرضها حسب نوعها (نص، صورة، صوت)
-        db.ref('comments').on('value', s => {
-            const container = document.getElementById('adminChat');
-            container.innerHTML = "";
-            s.forEach(child => {
-                const c = child.val();
-                const id = child.key;
-                let contentHTML = "";
+<script>
+    const config = { databaseURL: "https://ourphotoshare-a874a-default-rtdb.firebaseio.com" };
+    firebase.initializeApp(config); const db = firebase.database();
 
-                // فحص نوع المحتوى لمنع ظهور [object Object]
-                if (c.type === "image") {
-                    contentHTML = `<div class="media-content"><img src="${c.data}"></div>`;
-                } else if (c.type === "audio") {
-                    contentHTML = `<div class="media-content"><audio controls src="${c.data}"></audio></div>`;
-                } else {
-                    contentHTML = `<p>${c.text || c}</p>`;
-                }
-
-                container.innerHTML += `
-                    <div class="comm-box">
-                        ${contentHTML}
-                        <div class="reply-area">
-                            <input type="text" id="rep-${id}" placeholder="اكتب ردك هنا...">
-                            <button class="btn-reply" onclick="reply('${id}')">رد</button>
-                        </div>
-                        ${c.reply ? `<p style="color:#22c55e; font-size:13px; margin-top:5px;">✅ ردك: ${c.reply}</p>` : ''}
-                    </div>`;
-            });
+    // 1. جلب الرسائل بنفس تنسيق مشمش ولكن مع أزرار (حذف ورد)
+    db.ref('comments').on('value', snap => {
+        const box = document.getElementById('chat-flow'); box.innerHTML = "";
+        snap.forEach(c => {
+            const m = c.val(); const key = c.key;
+            const div = document.createElement('div');
+            div.className = `bubble ${m.isAdmin ? 'adm-style' : 'mish-style'}`;
+            
+            let content = m.type === 'image' ? `<img src="${m.data}">` : `<p style="margin:0">${m.text || m}</p>`;
+            let replyInfo = m.reply ? `<div style="font-size:11px; color:#22c55e; margin-top:5px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">✅ تم الرد: ${m.reply}</div>` : '';
+            
+            div.innerHTML = `
+                ${content}
+                ${replyInfo}
+                <div class="admin-tools">
+                    <button class="tool-btn-sm" onclick="replyMsg('${key}')">رد</button>
+                    <button class="tool-btn-sm" style="color:#ff4757" onclick="deleteMsg('${key}')">حذف</button>
+                </div>
+            `;
+            box.appendChild(div);
         });
+        box.scrollTop = box.scrollHeight;
+    });
 
-        function reply(id) {
-            const txt = document.getElementById('rep-'+id).value;
-            if(txt) db.ref('comments/'+id).update({ reply: txt }).then(() => alert("تم إرسال الرد"));
+    // 2. وظائف المدير
+    function sendMsg() {
+        const inp = document.getElementById('msg-input');
+        if(inp.value.trim()) {
+            db.ref('comments').push({ text: inp.value, isAdmin: true, time: Date.now() });
+            inp.value = "";
         }
-    </script>
+    }
+
+    function replyMsg(id) {
+        const txt = prompt("اكتب ردك على هذه الرسالة:");
+        if(txt) db.ref('comments/'+id).update({ reply: txt });
+    }
+
+    function deleteMsg(id) {
+        if(confirm("حذف هذه الرسالة؟")) db.ref('comments/'+id).remove();
+    }
+
+    function resetEverything() {
+        if(confirm("تصفير شامل للدردشة؟")) db.ref('comments').remove();
+    }
+
+    function changeQuotes() {
+        const q = prompt("أدخل الجمل الجديدة (افصل بينها بـ علامة - )");
+        if(q) db.ref('mish_quotes').set(q.split("-"));
+    }
+
+    // 3. مزامنة الصور والحالة (للمعاينة)
+    db.ref('mish_profile').on('value', s => {
+        const d = s.val(); if(d && d !== "EMPTY") { document.getElementById('p-img').src = d; document.getElementById('p-img').style.display="block"; document.getElementById('p-ltr').style.display="none"; }
+    });
+
+    db.ref('mish_story_photo').on('value', s => {
+        if(s.val() && s.val() !== "EMPTY") document.getElementById('avatar-main').classList.add('has-story');
+        else document.getElementById('avatar-main').classList.remove('has-story');
+    });
+
+    // الجمل المتحركة
+    db.ref('mish_quotes').on('value', s => {
+        const list = s.val() || ["أهلاً بك يا مدير النظام ✨"];
+        document.getElementById('q-box').innerHTML = list.concat(list).map(x => `<span class="quote-item">${x} 🌸</span>`).join("");
+    });
+
+    // الرفع واللوحات
+    function uploadFile(input, mode) {
+        const r = new FileReader(); r.onload = e => {
+            if(mode==='chat') db.ref('comments').push({type:'image', data:e.target.result, isAdmin:true});
+            else if(mode==='profile') db.ref('mish_profile').set(e.target.result);
+            else if(mode==='story') db.ref('mish_story_photo').set(e.target.result);
+            closeSheets();
+        }; r.readAsDataURL(input.files[0]);
+    }
+
+    function openAdminSheet() { document.getElementById('p-overlay').style.display='flex'; setTimeout(()=>document.getElementById('p-sheet').classList.add('show'),10); }
+    function closeSheets() { document.querySelectorAll('.bottom-sheet').forEach(s=>s.classList.remove('show')); setTimeout(()=>document.querySelectorAll('.sheet-overlay').forEach(o=>o.style.display='none'),300); }
+</script>
 </body>
-</html>
+                                                                                                                                                 </html>
